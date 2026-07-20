@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'joseon-fisheries-v10-3';
+const CACHE_NAME = 'joseon-fisheries-v10-4';
 const APP_SHELL = [
   './',
   './index.html',
