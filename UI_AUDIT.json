@@ -1,0 +1,11 @@
+{
+  "checks": {
+    "single_detail_toggle": true,
+    "clear_button": true,
+    "title_single_line": true,
+    "panel_width_540": true,
+    "status_tooltip": true,
+    "marker_smaller": true
+  },
+  "errors": []
+}

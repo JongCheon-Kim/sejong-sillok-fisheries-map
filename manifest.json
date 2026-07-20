@@ -1,0 +1,26 @@
+{
+  "name": "『세종실록지리지』 조선 8도 수산물 지도",
+  "short_name": "조선8도 수산물",
+  "description": "『세종실록지리지』의 조선 8도 수산물 기록을 지도·통계·그래프로 탐색하는 웹앱",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2eadf",
+  "theme_color": "#845638",
+  "lang": "ko-KR",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
