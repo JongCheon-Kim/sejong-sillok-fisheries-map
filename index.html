@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>『세종실록지리지』 조선 8도 수산물 지도 v10.3</title>
+<title>『세종실록지리지』 조선 8도 수산물 지도 v10.4</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#845638">
@@ -44,6 +44,15 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:#e7dfd2;co
 
 .panel{position:fixed;z-index:2000;right:16px;top:16px;width:540px;height:calc(100vh - 32px);min-width:390px;min-height:420px;max-width:94vw;max-height:96vh;background:var(--paper);border:1px solid #a99172;border-radius:18px;box-shadow:0 14px 42px rgba(0,0,0,.34);display:flex;flex-direction:column;resize:both;overflow:hidden;font-size:var(--panel-font)}
 .panel.hidden-panel{display:none}
+/* v10.4: 선택창과 결과창을 2단계로 분리 */
+.panel.selection-mode .panel-main{display:none}
+.panel.result-mode .header-content,
+.panel.result-mode .filter-funnel,
+.panel.result-mode .crumbs,
+.panel.result-mode .tabs{display:none}
+.panel.result-mode .panel-top{border-bottom:0}
+.panel.result-mode .dragbar-title::after{content:" · 결과 보기";color:#7a5b3f}
+.panel.result-mode .panel-main{display:flex;flex:1 1 auto;min-height:0}
 .panel.minimized{height:76px!important;min-height:76px;resize:none}
 .panel.minimized .panel-main{display:none}
 .panel-top{flex:0 0 auto;background:linear-gradient(135deg,#faf7f0,#eadbc5);border-bottom:1px solid var(--line)}
@@ -123,7 +132,7 @@ body.font-large .card-name{font-size:19px}body.font-large .section-title{font-si
 <body>
 <div id="map"></div>
 <button id="installBtn" class="install-btn">앱으로 설치</button>
-<aside id="panel" class="panel hidden-panel">
+<aside id="panel" class="panel hidden-panel selection-mode">
  <div class="panel-top">
   <div id="dragbar" class="dragbar">
    <span class="dragbar-title">☰ 패널 이동 · 모서리에서 크기 조절</span>
@@ -178,10 +187,43 @@ function provinceHoverHtml(p){
  const max=Math.max(1,...entries.map(([,v])=>v));
  return `<div class="province-hover"><h3>${p.name}</h3><div class="hover-total">총 ${p.total}품목 · 마우스로 통계 확인</div>${entries.map(([k,v])=>`<div class="hover-row"><span>${k.replace('가공품 및 기타','가공·기타').replace('기타 수산동물','기타 동물')}</span><div class="hover-track"><div class="hover-fill" style="width:${Math.max(8,v/max*100)}%"></div></div><b>${v}</b></div>`).join('')}<div class="hover-hint">클릭하면 상세 선택창이 열립니다.</div></div>`;
 }
+function showSelectionView(){
+ const panel=el('panel');
+ panel.classList.remove('result-mode','minimized');
+ panel.classList.add('selection-mode');
+ el('minBtn').textContent='—';
+ el('closeBtn').title='선택창 닫기';
+ el('closeBtn').setAttribute('aria-label','선택창 닫기');
+ setTimeout(()=>map.invalidateSize(),50);
+}
+function showResultView(tab){
+ const panel=el('panel');
+ state.tab=tab;
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
+ panel.classList.remove('selection-mode','minimized');
+ panel.classList.add('result-mode');
+ el('minBtn').textContent='—';
+ el('closeBtn').title='결과 닫기 · 선택창으로 돌아가기';
+ el('closeBtn').setAttribute('aria-label','결과 닫기 · 선택창으로 돌아가기');
+ render();
+ el('content').scrollTop=0;
+ setTimeout(()=>map.invalidateSize(),50);
+}
+function closePanelToMap(){
+ const panel=el('panel');
+ panel.classList.add('hidden-panel');
+ panel.classList.remove('minimized','result-mode');
+ panel.classList.add('selection-mode');
+ el('minBtn').textContent='—';
+ state.region='전국';state.category='전체';state.subcategory='전체';state.season='전체';state.itemKey=null;
+ syncControlsFromState();cascadeUpdate();
+ map.setView([38.2,127.35],7,{animate:true});
+ setTimeout(()=>map.invalidateSize(),80);
+}
 function openProvince(p){
  state.region=p.name;state.itemKey=null;syncControlsFromState();cascadeUpdate();
- el('panel').classList.remove('hidden-panel','minimized');
- el('minBtn').textContent='—';
+ el('panel').classList.remove('hidden-panel');
+ showSelectionView();
  map.panTo([p.lat,p.lon],{animate:true,duration:.35});
  setTimeout(()=>map.invalidateSize(),80);
 }
@@ -366,7 +408,7 @@ function render(){
  const labels={items:'현재 조건의 품목',unique:'지역 고유 품목',common:'4도 이상 전국 공통 품목',season:'계절·어기 확인 품목'};
  el('content').innerHTML=listHtml(rows,labels[state.tab]||'품목 목록');
 }
-el('region').onchange=e=>{state.region=e.target.value;state.category='전체';state.subcategory='전체';state.season='전체';state.itemKey=null;cascadeUpdate();el('panel').classList.remove('hidden-panel')};
+el('region').onchange=e=>{state.region=e.target.value;state.category='전체';state.subcategory='전체';state.season='전체';state.itemKey=null;cascadeUpdate();el('panel').classList.remove('hidden-panel');showSelectionView()};
 el('category').onchange=e=>{state.category=e.target.value;state.subcategory='전체';state.season='전체';state.itemKey=null;cascadeUpdate()};
 el('subcategory').onchange=e=>{state.subcategory=e.target.value;state.season='전체';state.itemKey=null;cascadeUpdate()};
 el('season').onchange=e=>{state.season=e.target.value;state.itemKey=null;cascadeUpdate()};
@@ -375,10 +417,10 @@ el('itemInput').onmouseenter=()=>{updateAutocomplete(el('itemInput').value);el('
 el('itemInput').oninput=e=>{state.itemKey=null;updateAutocomplete(e.target.value);el('autocomplete').classList.add('open')};
 el('itemClear').onclick=e=>{e.stopPropagation();state.itemKey=null;el('itemInput').value='';el('autocomplete').classList.remove('open');cascadeUpdate()};
 document.addEventListener('click',e=>{if(!e.target.closest('.item-picker'))el('autocomplete').classList.remove('open')});
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{state.tab=t.dataset.tab;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));render()});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showResultView(t.dataset.tab));
 function setFont(size){document.body.classList.remove('font-small','font-large');if(size==='small')document.body.classList.add('font-small');if(size==='large')document.body.classList.add('font-large')}
 el('minBtn').onclick=()=>{el('panel').classList.toggle('minimized');el('minBtn').textContent=el('panel').classList.contains('minimized')?'□':'—'};
-el('closeBtn').onclick=()=>{el('panel').classList.add('hidden-panel');el('panel').classList.remove('minimized');el('minBtn').textContent='—';state.region='전국';state.category='전체';state.subcategory='전체';state.season='전체';state.itemKey=null;syncControlsFromState();cascadeUpdate();map.setView([38.2,127.35],7,{animate:true});setTimeout(()=>map.invalidateSize(),80)};
+el('closeBtn').onclick=()=>{if(el('panel').classList.contains('result-mode'))showSelectionView();else closePanelToMap()};
 // Desktop drag
 (()=>{const panel=el('panel'),bar=el('dragbar');let dragging=false,dx=0,dy=0;
  bar.addEventListener('mousedown',e=>{if(e.target.closest('button')||innerWidth<=820)return;dragging=true;const r=panel.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;panel.style.right='auto';e.preventDefault()});
